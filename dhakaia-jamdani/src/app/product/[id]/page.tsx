@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { ShoppingCart, ArrowLeft, Star, Info, Check, X, Heart } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Star, Info, Check, X, Heart, MessageCircle } from "lucide-react";
 import { addToCart, addToFavorites } from "@/app/slices/cartSlice";
 import { User } from "@supabase/supabase-js";
 import { getUserData } from "@/app/auth/getUser";
@@ -23,6 +23,13 @@ const Page = () => {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showFavPrompt, setShowFavPrompt] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+
+  const whatsappNumbers = [
+    "8801322902540", "8801322902541", "8801322902542", "8801322902543",
+    "8801322902544", "8801322902545", "8801322902546", "8801322902548",
+    "8801322902549"
+  ];
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -405,19 +412,28 @@ const Page = () => {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6, delay: 0.7 }}
-                  className="flex items-center"
+                  className="flex items-center gap-3"
                 >
                   {product.availability === "in-stock" ? (
                     <div className="flex items-center text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-lg">
                       <div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
                       In Stock
-                    </div>
+                    </div> 
                   ) : (
                     <div className="flex items-center text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">
                       <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-                      Out of Stock
+                      Out of Stock 
                     </div>
                   )}
+                  {/* WhatsApp Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowWhatsappModal(true)}
+                    className="ml-3 flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    WhatsApp
+                  </button>
                 </motion.div>
 
                 <motion.div
@@ -608,6 +624,54 @@ const Page = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowFavPrompt(false)}
+                    className="w-full mt-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 py-2 transition-colors"
+                  >
+                    Close
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* WhatsApp Modal */}
+        <AnimatePresence>
+          {showWhatsappModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Contact via WhatsApp</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">Click a number below to chat with us on WhatsApp:</p>
+                  <div className="flex flex-wrap justify-center gap-2 mb-4">
+                    {whatsappNumbers.map((num) => (
+                      <a
+                        key={num}
+                        href={`https://wa.me/${num}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
+                      >
+                        +{num}
+                      </a>
+                    ))}
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowWhatsappModal(false)}
                     className="w-full mt-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 py-2 transition-colors"
                   >
                     Close
