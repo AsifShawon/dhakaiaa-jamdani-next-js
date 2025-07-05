@@ -10,7 +10,8 @@ import {
   Users, 
   Settings, 
   BarChart3,
-  LogOut
+  LogOut,
+  HeartHandshakeIcon
 } from "lucide-react";
 import { supabase } from "@/app/utils/supabase/supabaseClient";
 import React from "react";
@@ -24,12 +25,12 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ sidebarOpen, setSidebarOp
   const pathname = usePathname();
 
   const menuItems = [
-    // {
-    //   title: "Dashboard",
-    //   icon: LayoutDashboard,
-    //   href: "/Admin/Dashboard",
-    //   color: "text-blue-500"
-    // },
+    {
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/Admin/Dashboard",
+      color: "text-blue-500"
+    },
     {
       title: "All Products",
       icon: Package,
@@ -48,12 +49,18 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ sidebarOpen, setSidebarOp
       href: "/Admin/Orders",
       color: "text-orange-500"
     },
-    // {
-    //   title: "Analytics",
-    //   icon: BarChart3,
-    //   href: "/Admin/Analytics",
-    //   color: "text-indigo-500"
-    // },
+    {
+      title: "Analytics",
+      icon: BarChart3,
+      href: "/Admin/Analytics",
+      color: "text-indigo-500"
+    },
+    {
+      title: "Offers",
+      icon: HeartHandshakeIcon,
+      href: "/Admin/Offers",
+      color: "text-yellow-500"
+    }
     // {
     //   title: "Customers",
     //   icon: Users,

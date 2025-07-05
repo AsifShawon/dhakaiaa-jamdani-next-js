@@ -178,7 +178,7 @@ export const deleteProduct = async (productId: number) => {
     }
 
     if (files && files.length > 0) {
-      const filePaths = files.map(file => `${folderPath}${file.name}`);
+      const filePaths = files.map((file: { name: string }) => `${folderPath}${file.name}`);
   
       // Delete all files in the folder
       const { data, error: storageError } = await supabase.storage
