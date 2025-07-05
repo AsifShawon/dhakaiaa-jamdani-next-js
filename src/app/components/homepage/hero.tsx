@@ -48,7 +48,7 @@ const Hero = () => {
 
             {/* Buttons - Simplified without hydration issues */}
             <div className="absolute flex flex-col sm:flex-row gap-4 z-50">
-              <Link href="/Shop" className="relative">
+              <Link href="/Shop" className="relative hidden md:block">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -58,7 +58,7 @@ const Hero = () => {
                 </motion.button>
               </Link>
               
-              <Link href="/about" className="relative">
+              <Link href="/Shop" className="relative hidden md:block">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
