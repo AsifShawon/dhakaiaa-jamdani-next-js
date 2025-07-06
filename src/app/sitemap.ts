@@ -1,10 +1,10 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://dhakaiaajamdani.com'
+  const baseUrl = 'https://dhakaiaajamdani.com.bd'
   
   // Static pages
-  const staticPages = [
+  const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: new Date(),
@@ -24,7 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/contact`,
+      url: `${baseUrl}/Contact`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
       priority: 0.7,
@@ -41,29 +41,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     },
+    {
+      url: `${baseUrl}/checkout`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    },
   ]
 
   // Category pages
   const categories = ['Sharee', 'Panjabi', 'Threepcs']
-  const categoryPages = categories.map(category => ({
+  const categoryPages: MetadataRoute.Sitemap = categories.map(category => ({
     url: `${baseUrl}/Shop?category=${category}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
 
-  // TODO: Add dynamic product pages
-  // You would fetch product IDs from your database here
-  // const productPages = products.map(product => ({
-  //   url: `${baseUrl}/product/${product.id}`,
-  //   lastModified: new Date(product.updated_at),
-  //   changeFrequency: 'weekly' as const,
-  //   priority: 0.6,
-  // }))
-
   return [
     ...staticPages,
     ...categoryPages,
-    // ...productPages,
   ]
 }

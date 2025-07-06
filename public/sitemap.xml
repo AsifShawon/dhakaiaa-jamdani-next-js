@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>1.00</priority>
+  </url>
+  
+  <!-- Shop Page -->
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/Shop</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  
+  <!-- Contact Page -->
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/Contact</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  
+  <!-- Login Page -->
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/login</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  
+  <!-- Category Pages -->
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/Shop?category=Sharee</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/Shop?category=Panjabi</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/Shop?category=Threepcs</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  
+  <!-- Signup Page -->
+  <url>
+    <loc>https://dhakaiaajamdani.com.bd/Signup</loc>
+    <lastmod>2025-07-06T14:41:02+00:00</lastmod>
+    <priority>0.64</priority>
+  </url>
+  
+</urlset>

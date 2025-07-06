@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import RootClientLayout from "./RootClientLayout";
 import { ThemeProvider } from "./context/ThemeContext";
+import Script from 'next/script';
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -156,21 +157,22 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#ef4444" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         <meta name="theme-color" content="#ef4444" />
-
-        {/* Google Analytics */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-VHTYY23LE9"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-VHTYY23LE9');
-            `,
-          }}
-        />
       </head>
       <body className={inter.className}>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-VHTYY23LE9"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-VHTYY23LE9');
+          `}
+        </Script>
+        
         <ThemeProvider>
           <RootClientLayout>{children}</RootClientLayout>
         </ThemeProvider>
