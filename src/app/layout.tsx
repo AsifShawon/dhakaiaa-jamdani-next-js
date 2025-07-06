@@ -156,6 +156,19 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#ef4444" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         <meta name="theme-color" content="#ef4444" />
+
+        {/* Google Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-VHTYY23LE9"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-VHTYY23LE9');
+            `,
+          }}
+        />
       </head>
       <body className={inter.className}>
         <ThemeProvider>
