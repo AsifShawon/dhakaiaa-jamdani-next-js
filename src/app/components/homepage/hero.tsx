@@ -58,7 +58,7 @@ const Hero = () => {
                 </motion.button>
               </Link>
               
-              <Link href="/Shop" className="relative hidden md:block">
+              <Link href="/About" className="relative hidden md:block">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

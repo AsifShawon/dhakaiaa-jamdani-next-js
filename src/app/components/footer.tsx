@@ -38,7 +38,7 @@ const Footer = () => {
       title: "Customer Care",
       links: [
         { href: "/shipping", label: "Shipping Info" },
-        { href: "/returns", label: "Returns" },
+        { href: "/return", label: "Returns" },
         { href: "/size-guide", label: "Size Guide" },
         { href: "/faq", label: "FAQ" },
       ],
