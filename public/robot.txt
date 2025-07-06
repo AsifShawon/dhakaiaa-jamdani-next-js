@@ -1,5 +1,5 @@
 # Robots.txt for Dhakaia Jamdani
-# https://dhakaiaajamdani.com/robots.txt
+# https://dhakaiaajamdani.com.bd/robots.txt
 
 User-agent: *
 Allow: /
@@ -9,8 +9,6 @@ Disallow: /api/
 Disallow: /auth/
 Disallow: /_next/
 Disallow: /checkout/
-Disallow: /login
-Disallow: /Signup
 
 # Allow specific bots
 User-agent: Googlebot
@@ -30,10 +28,10 @@ Disallow: /auth/
 Disallow: /checkout/
 
 # Sitemap location
-Sitemap: https://dhakaiaajamdani.com/sitemap.xml
+Sitemap: https://dhakaiaajamdani.com.bd/sitemap.xml
 
 # Crawl delay (optional)
 Crawl-delay: 1
 
 # Host directive
-Host: https://dhakaiaajamdani.com
+Host: https://dhakaiaajamdani.com.bd

@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://dhakaiaajamdani.com'),
+  metadataBase: new URL('https://dhakaiaajamdani.com.bd'),
   title: {
     default: "Dhakaia Jamdani - Authentic Traditional Bangladeshi Clothing | Premium Sharee, Panjabi & Three Piece | ঢাকাইয়া জামদানি - বাংলাদেশের ঐতিহ্যবাহী পোশাক",
     template: "%s | Dhakaia Jamdani - Traditional Bangladeshi Fashion | ঢাকাইয়া জামদানি"
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://dhakaiaajamdani.com',
+    url: 'https://dhakaiaajamdani.com.bd',
     siteName: 'Dhakaia Jamdani',
     title: 'Dhakaia Jamdani - Authentic Traditional Bangladeshi Clothing',
     description: 'Discover premium quality traditional Bangladeshi clothing. Handcrafted Jamdani Sharee, elegant Panjabi, and beautiful Three Piece collections with authentic cultural heritage.',
@@ -110,10 +110,9 @@ export const metadata: Metadata = {
     yahoo: 'your-yahoo-verification-code',
   },
   alternates: {
-    canonical: 'https://dhakaiaajamdani.com',
+    canonical: 'https://dhakaiaajamdani.com.bd',
     languages: {
-      'en-US': 'https://dhakaiaajamdani.com',
-      'bn-BD': 'https://dhakaiaajamdani.com/bn',
+      'en-US': 'https://dhakaiaajamdani.com.bd',
     },
   },
   category: 'fashion',
