@@ -1,4 +1,5 @@
 // src/app/privacy/page.tsx
+"use client";
 import React from 'react';
 
 const PrivacyPolicyPage: React.FC = () => {
