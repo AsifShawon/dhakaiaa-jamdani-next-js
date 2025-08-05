@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and auth pages
+Disallow: /Admin/
+Disallow: /dashboard/
+Disallow: /checkout
+
+# Sitemap location
+Sitemap: https://dhakaiaajamdani.com.bd/sitemap.xml

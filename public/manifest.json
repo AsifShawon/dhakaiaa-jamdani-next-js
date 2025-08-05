@@ -1,0 +1,31 @@
+{
+  "name": "Dhakaia Jamdani - Traditional Bangladeshi Clothing",
+  "short_name": "Dhakaia Jamdani",
+  "description": "Authentic traditional Bangladeshi clothing store specializing in Jamdani Sharee, Panjabi, and Three Piece collections",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ef4444",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/dhakaiaa_jamdani_fav_4.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/dhakaiaa_jamdani_fav_1.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/dhakaiaa_jamdani_fav_1.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["shopping", "fashion", "lifestyle"],
+  "lang": "en-US",
+  "dir": "ltr"
+}

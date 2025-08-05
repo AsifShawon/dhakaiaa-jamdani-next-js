@@ -1,0 +1,140 @@
+.price_container {
+    height: 10vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .slider {
+    position: relative;
+    width: 200px;
+  }
+  
+  .slider__track,
+  .slider__range,
+  .slider__left-value,
+  .slider__right-value {
+    position: absolute;
+  }
+  
+  .slider__track,
+  .slider__range {
+    border-radius: 3px;
+    height: 5px;
+  }
+  
+  .slider__track {
+    background-color: #b5b5b6;
+    width: 100%;
+    z-index: 1;
+  }
+  
+  .slider__range {
+    background-color: #fc9292;
+    z-index: 2;
+  }
+  
+  .slider__left-value,
+  .slider__right-value {
+    color: #474748;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 20px;
+  }
+  
+  .slider__left-value {
+    left: 6px;
+  }
+  
+  .slider__right-value {
+    right: -4px;
+  }
+  
+  /* Removing the default appearance */
+  .thumb,
+  .thumb::-webkit-slider-thumb {
+    -webkit-appearance: none;
+  }
+  
+  .thumb {
+    pointer-events: none;
+    position: absolute;
+    height: 0;
+    width: 200px;
+    outline: none;
+  }
+  
+  .thumb--left {
+    z-index: 3;
+  }
+  
+  .thumb--right {
+    z-index: 4;
+  }
+  
+  /* For Chrome browsers */
+  .thumb::-webkit-slider-thumb {
+    background-color: #f63737;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 0 1px 1px #f63737;
+    cursor: pointer;
+    height: 18px;
+    width: 18px;
+    margin-top: 4px;
+    pointer-events: all;
+    position: relative;
+  }
+  
+  /* For Firefox browsers */
+  .thumb::-moz-range-thumb {
+    background-color: #f1f5f7;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 0 1px 1px #ced4da;
+    cursor: pointer;
+    height: 18px;
+    width: 18px;
+    margin-top: 4px;
+    pointer-events: all;
+    position: relative;
+  }
+  
+  .price_container input[type="text"] {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    width: 100px;
+    font-size: 14px;
+  }
+  
+  .price_container input[type="text"]:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 1px #4f46e5;
+  }
+  
+  .price_container .flex {
+    display: flex;
+  }
+  
+  .price_container .items-center {
+    align-items: center;
+  }
+  
+  .price_container .justify-between {
+    justify-content: space-between;
+  }
+  
+  .price_container .mb-4 {
+    margin-bottom: 1rem;
+  }
+  
+  .price_container .mr-2 {
+    margin-right: 0.5rem;
+  }
+  
+  .price_container .mx-4 {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }

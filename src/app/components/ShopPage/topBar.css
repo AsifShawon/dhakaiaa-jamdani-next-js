@@ -1,0 +1,13 @@
+
+.select option {
+  background-color: transparent;
+  color: #000000;
+  padding: 2.5rem;
+  font-size: 1rem;
+}
+
+.select option:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+ 
