@@ -160,7 +160,7 @@ This project is licensed under the MIT License.
 
 ## 📞 Support
 
-For support, email [your-email@domain.com] or create an issue in the repository.
+For support, email [asifbhuiyanshawon@gmail.com] or create an issue in the repository.
 
 ---
 
