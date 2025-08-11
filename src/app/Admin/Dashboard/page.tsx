@@ -12,7 +12,9 @@ import {
   Eye,
   Calendar,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Shield,
+  User
 } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "@/app/context/ThemeContext";
@@ -21,6 +23,7 @@ import AnalyticsChart from "@/app/components/Admin/AnalyticsChart";
 import RecentOrders from "@/app/components/Admin/RecentOrders";
 import NotificationCenter from "@/app/components/Admin/NotificationCenter";
 import { fetchDashboardStats, fetchNotifications } from "./action";
+import { useAdminAuth } from "@/app/hooks/useAdminAuth";
 
 // Type definitions
 interface Product {
@@ -55,6 +58,7 @@ interface DashboardStats {
 
 const Dashboard = () => {
   const { theme } = useTheme();
+  const { profile, user } = useAdminAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalOrders: 0,
     totalRevenue: 0,
@@ -217,6 +221,61 @@ const Dashboard = () => {
             <NotificationCenter />
           </div>
         </motion.div>
+
+        {/* Admin Info Section */}
+        {profile && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mb-8"
+          >
+            <div className={clsx("rounded-xl p-6 border", {
+              "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200": theme === "light",
+              "bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-800": theme === "dark",
+            })}>
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                  <User className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className={clsx("text-xl font-semibold", {
+                    "text-gray-900": theme === "light",
+                    "text-white": theme === "dark",
+                  })}>
+                    Welcome, {profile.firstname} {profile.lastname}
+                  </h3>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Shield className="w-4 h-4 text-green-500" />
+                    <span className="text-green-600 dark:text-green-400 text-sm font-medium capitalize">
+                      {profile.role}
+                    </span>
+                    <span className={clsx("text-sm", {
+                      "text-gray-500": theme === "light",
+                      "text-gray-400": theme === "dark",
+                    })}>
+                      • Logged in as {user?.email}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={clsx("text-sm", {
+                    "text-gray-600": theme === "light",
+                    "text-gray-400": theme === "dark",
+                  })}>
+                    Last login
+                  </p>
+                  <p className={clsx("text-sm font-medium", {
+                    "text-gray-900": theme === "light",
+                    "text-white": theme === "dark",
+                  })}>
+                    {new Date().toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats Cards */}
         <motion.div

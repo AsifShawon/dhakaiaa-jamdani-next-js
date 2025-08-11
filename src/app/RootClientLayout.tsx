@@ -25,9 +25,14 @@ export default function RootClientLayout({
   console.log("Current Theme:", theme);
   useEffect(() => {
     const fetchOffers = async () => {
-      const activeOffers = await getActiveOffers();
-      console.log("Active Offers:", activeOffers);
-      setOffers(activeOffers);
+      try {
+        const activeOffers = await getActiveOffers();
+        console.log("Active Offers:", activeOffers);
+        setOffers(activeOffers);
+      } catch (error) {
+        console.error("Failed to fetch offers:", error);
+        setOffers([]); // Set empty array on error
+      }
     };
     fetchOffers();
   }, []);

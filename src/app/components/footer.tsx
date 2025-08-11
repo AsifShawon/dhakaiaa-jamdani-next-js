@@ -23,6 +23,7 @@ const Footer = () => {
         { href: "/Shop", label: "Shop" },
         { href: "/about", label: "About Us" },
         { href: "/contact", label: "Contact" },
+        { href: "/privacy", label: "Privacy Policy" },
       ],
     },
     {

@@ -54,6 +54,7 @@ const ProductTable = () => {
         // Add all existing product data
         formData.append("title", product.title);
         formData.append("description", product.description);
+        formData.append("detailed_desc", product.detailed_desc || ""); // Preserve detailed description
         formData.append("category", product.category);
         formData.append("inStock", changes.availability || product.availability);
         formData.append("price", (changes.price || product.price).toString());
@@ -83,6 +84,7 @@ const ProductTable = () => {
       const formData = new FormData();
       formData.append("title", product.title);
       formData.append("description", product.description);
+      formData.append("detailed_desc", product.detailed_desc || ""); // Preserve detailed description
       formData.append("category", product.category);
       formData.append("inStock", product.availability);
       formData.append("price", product.price.toString());

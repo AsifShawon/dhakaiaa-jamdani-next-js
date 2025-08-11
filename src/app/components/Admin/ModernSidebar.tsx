@@ -12,10 +12,12 @@ import {
   BarChart3,
   LogOut,
   HeartHandshakeIcon,
-  Bell
+  Bell,
+  Shield,
+  User
 } from "lucide-react";
-import { supabase } from "@/app/utils/supabase/supabaseClient";
 import React, { useMemo, useState, useEffect } from "react";
+import { useAdminAuth } from "@/app/hooks/useAdminAuth";
 
 interface ModernSidebarProps {
   sidebarOpen: boolean;
@@ -25,6 +27,7 @@ interface ModernSidebarProps {
 const ModernSidebar: React.FC<ModernSidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const { logout, profile, user } = useAdminAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -83,8 +86,7 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ sidebarOpen, setSidebarOp
   ], []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/login';
+    await logout();
   };
 
   return (
@@ -108,45 +110,74 @@ const ModernSidebar: React.FC<ModernSidebarProps> = ({ sidebarOpen, setSidebarOp
           </svg>
         </button>
 
-        {/* Logo */}
+        {/* Logo and Admin Info */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <Link href="/Admin/Dashboard" className="flex items-center space-x-3">
+          <Link href="/Admin/Dashboard" className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-lg">ঢ</span>
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Dhakaiaa Jamdani</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Dhakaia Jamdani</p>
             </div>
           </Link>
+          
+          {/* Admin Profile Section */}
+          {profile && (
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {profile.firstname} {profile.lastname}
+                </p>
+                <div className="flex items-center space-x-1">
+                  <Shield className="w-3 h-3 text-green-500" />
+                  <p className="text-xs text-green-600 dark:text-green-400 capitalize">
+                    {profile.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {mounted && menuItems.map((item) => {
-            const isActive = pathname === item.href;
             const Icon = item.icon;
-
+            const isActive = pathname === item.href;
+            
             return (
-              <Link key={item.id} href={item.href}>
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`
+                  flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200
+                  ${isActive 
+                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-600 dark:text-blue-400 shadow-sm' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                  }
+                `}
+                onClick={() => setSidebarOpen(false)}
+              >
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  }`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? "text-red-500" : item.color}`} />
-                  <span className="font-medium">{item.title}</span>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="ml-auto w-2 h-2 bg-red-500 rounded-full"
-                    />
-                  )}
+                  <Icon className={`w-5 h-5 ${isActive ? item.color : ''}`} />
                 </motion.div>
+                <span className="font-medium">{item.title}</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeIndicator"
+                    className="w-2 h-2 bg-blue-500 rounded-full ml-auto"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
               </Link>
             );
           })}

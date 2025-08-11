@@ -1,5 +1,5 @@
 // import { createClient } from "@/app/utils/supabase/supabaseServer.js";
-import { supabase } from "@/app/utils/supabase/supabaseClient";
+import { supabase } from "@/app/utils/supabase/supabaseClient.js";
 
 export interface OfferData {
   title: string;
@@ -128,7 +128,7 @@ export const toggleOfferStatus = async (offerId: string, isActive: boolean) => {
 export const getActiveOffers = async () => {
   try {
     const now = new Date().toISOString();
-    console.log('Fetching active offers at:', now);
+    
     const { data, error } = await supabase
       .from('offers')
       .select('*')
@@ -137,12 +137,19 @@ export const getActiveOffers = async () => {
       .gte('end_date', now);
 
     if (error) {
-      console.error('Supabase error in getActiveOffers:', error);
+      console.error('Supabase error in getActiveOffers:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       throw error;
     }
+    
     return data || [];
   } catch (error) {
     console.error('Error fetching active offers:', error);
+    // Return empty array instead of throwing to prevent UI crashes
     return [];
   }
 };
