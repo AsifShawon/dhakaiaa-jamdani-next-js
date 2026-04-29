@@ -8,6 +8,7 @@ import {
   clearCart,
   initializeFromStorage,
   syncCart,
+  syncCartNow,
   incrementQuantity,
   decrementQuantity,
 } from "@/app/slices/cartSlice";
@@ -221,7 +222,10 @@ export default function FloatingCart() {
                                   <motion.button
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
-                                    onClick={() => dispatch(decrementQuantity(item.id))}
+                                    onClick={() => {
+                                      dispatch(decrementQuantity(item.id));
+                                      dispatch(syncCart());
+                                    }}
                                     className="p-1 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                   >
                                     <Minus className="w-3 h-3" />
@@ -234,7 +238,10 @@ export default function FloatingCart() {
                                   <motion.button
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
-                                    onClick={() => dispatch(incrementQuantity(item.id))}
+                                    onClick={() => {
+                                      dispatch(incrementQuantity(item.id));
+                                      dispatch(syncCart());
+                                    }}
                                     className="p-1 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                   >
                                     <Plus className="w-3 h-3" />
@@ -244,7 +251,10 @@ export default function FloatingCart() {
                                 <motion.button
                                   whileHover={{ scale: 1.1 }}
                                   whileTap={{ scale: 0.9 }}
-                                  onClick={() => dispatch(removeFromCart(item.id))}
+                                  onClick={() => {
+                                    dispatch(removeFromCart(item.id));
+                                    dispatch(syncCartNow());
+                                  }}
                                   className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -286,7 +296,7 @@ export default function FloatingCart() {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         dispatch(clearCart());
-                        dispatch(syncCart());
+                        dispatch(syncCartNow());
                       }}
                       className="w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white py-2 rounded-lg font-medium transition-colors"
                     >

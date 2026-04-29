@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import clsx from "clsx";
 import { addProduct } from "./action";
 import ReactMarkdown from "react-markdown";
+import Link from "next/link";
 
 const Page = () => {
   const { theme } = useTheme();
@@ -20,6 +21,10 @@ const Page = () => {
   const [discount, setDiscount] = useState(0);
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [isClient, setIsClient] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [lastCreatedProductId, setLastCreatedProductId] = useState<number | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -62,6 +67,21 @@ const Page = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
     setSelectedPhotos((prevFiles) => [...prevFiles, ...files]);
+  };
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const reorderImages = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setSelectedPhotos((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
   };
 
   const handleAIGenerate = async () => {
@@ -107,7 +127,13 @@ const Page = () => {
 
   const handleSubmit = async () => {
     setLoading(true);
+    setUploadProgress(0);
     try {
+      const totalFiles = selectedPhotos.length || 1;
+      for (let i = 1; i <= totalFiles; i++) {
+        setUploadProgress(Math.min(90, Math.round((i / totalFiles) * 90)));
+      }
+
       const formData = new FormData();
       formData.append("title", title);
       formData.append("description", description);
@@ -121,9 +147,10 @@ const Page = () => {
         formData.append("images", photo);
       });
 
-      await addProduct(formData);
-
-      alert("Product added successfully!");
+      const createdProduct = await addProduct(formData);
+      setLastCreatedProductId(createdProduct?.id ?? null);
+      setUploadProgress(100);
+      showToast("Product added successfully!", "success");
       setTitle("");
       setDescription("");
       setDetailedDescription("");
@@ -135,9 +162,12 @@ const Page = () => {
     } catch (error) {
       console.error("Error adding product:", error);
       setLoading(false);
-      alert("Failed to add product. Please try again.");
+      setUploadProgress(0);
+      showToast("Failed to add product. Please try again.", "error");
     }
   };
+
+  const finalPrice = Math.max(0, price - (price * discount) / 100);
 
   return (
     <div className={clsx("min-h-screen transition-colors duration-300", {
@@ -179,12 +209,12 @@ const Page = () => {
 
               <div className="space-y-6">
                 <div>
-                  <label className={labelClasses}>Product Title</label>
+                  <label className={labelClasses}>Product Title ({title.length}/100)</label>
                   <input
                     type="text"
                     value={title}
                     placeholder="Enter product title"
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => setTitle(e.target.value.slice(0, 100))}
                     className={inputClasses}
                     disabled={!isClient}
                   />
@@ -192,12 +222,22 @@ const Page = () => {
 
                 <div>
                   <label className={labelClasses}>Category</label>
-                  <select
-                    className={selectClasses}
-                    onChange={(e) => setCategory(e.target.value)}
-                    value={category}
-                    disabled={!isClient}
-                  >
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategory(cat)}
+                        className={clsx(
+                          "px-3 py-2 rounded-lg border text-sm",
+                          category === cat ? "bg-blue-500 text-white border-blue-500" : "border-gray-400"
+                        )}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                  <select className={selectClasses} onChange={(e) => setCategory(e.target.value)} value={category} disabled={!isClient}>
                     {categories.map((cat, index) => (
                       <option key={index} value={cat}>{cat}</option>
                     ))}
@@ -226,6 +266,18 @@ const Page = () => {
                     onChange={(e) => setDiscount(parseInt(e.target.value) || 0)}
                     disabled={!isClient}
                   />
+                </div>
+
+                <div className={clsx("rounded-lg border p-4", {
+                  "border-gray-300 bg-gray-50": theme === "light",
+                  "border-gray-600 bg-gray-700": theme === "dark",
+                })}>
+                  <p className={labelClasses}>Price Preview</p>
+                  <div className="text-sm space-y-1">
+                    <p>Original: ৳{price.toFixed(2)}</p>
+                    <p>Discount: {discount}%</p>
+                    <p className="font-bold text-green-500">Final: ৳{finalPrice.toFixed(2)}</p>
+                  </div>
                 </div>
 
                 <div>
@@ -286,13 +338,13 @@ const Page = () => {
 
                   {activeTab === "edit" ? (
                     <>
-                      <label className={labelClasses}>Product Description</label>
+                      <label className={labelClasses}>Product Description ({description.length}/500)</label>
                       <textarea
                         rows={4}
                         value={description}
                         placeholder="Short product description..."
                         className={clsx(inputClasses, "resize-none mb-4")}
-                        onChange={(e) => setDescription(e.target.value)}
+                        onChange={(e) => setDescription(e.target.value.slice(0, 500))}
                         disabled={!isClient}
                       />
 
@@ -342,7 +394,18 @@ const Page = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   {selectedPhotos.map((photo, index) => (
-                    <div key={index} className="relative group">
+                    <div
+                      key={index}
+                      className="relative group"
+                      draggable
+                      onDragStart={() => setDraggedIndex(index)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (draggedIndex === null) return;
+                        reorderImages(draggedIndex, index);
+                        setDraggedIndex(null);
+                      }}
+                    >
                       {isClient && (
                         <Image
                           src={URL.createObjectURL(photo)}
@@ -369,6 +432,9 @@ const Page = () => {
                       >
                         ×
                       </button>
+                      <span className="absolute bottom-1 left-1 text-[10px] bg-black/60 text-white px-1 rounded">
+                        Drag
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -410,6 +476,33 @@ const Page = () => {
             {loading ? "Adding Product..." : "Add Product"}
           </button>
         </div>
+        {loading && (
+          <div className="max-w-md mx-auto mt-4">
+            <progress className="progress progress-primary w-full" value={uploadProgress} max={100}></progress>
+            <p className="text-center text-sm mt-1">Upload progress: {uploadProgress}%</p>
+          </div>
+        )}
+        {lastCreatedProductId && !loading && (
+          <div className="flex justify-center gap-3 mt-6">
+            <button
+              className="btn btn-outline"
+              onClick={() => setLastCreatedProductId(null)}
+            >
+              Add Another
+            </button>
+            <Link className="btn btn-primary" href={`/product/${lastCreatedProductId}`}>
+              View Product
+            </Link>
+          </div>
+        )}
+        {toast && (
+          <div className={clsx(
+            "fixed bottom-6 right-6 px-4 py-3 rounded-lg text-white shadow-lg z-50",
+            toast.type === "success" ? "bg-green-600" : "bg-red-600"
+          )}>
+            {toast.message}
+          </div>
+        )}
       </div>
     </div>
   );

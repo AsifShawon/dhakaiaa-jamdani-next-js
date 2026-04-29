@@ -1,10 +1,9 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { Product } from "./productSlices";
 import { supabase } from "@/app/utils/supabase/supabaseClient";
-import { getUserData } from "../auth/getUser";
 
 interface CartState {
-  cart: { id: number; quantity: number, price: number }[];
+  cart: { id: number; quantity: number; price: number }[];
   favorites: number[];
   isInitialized?: boolean;
 }
@@ -15,26 +14,82 @@ const initialState: CartState = {
   isInitialized: false,
 };
 
-// Async Thunks for backend synchronization
+let syncCartDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const mergeCarts = (
+  localCart: { id: number; quantity: number; price: number }[],
+  serverCart: { id: number; quantity: number; price: number }[]
+) => {
+  const merged = [...localCart];
+  serverCart.forEach((serverItem) => {
+    const existing = merged.find((item) => item.id === serverItem.id);
+    if (!existing) {
+      merged.push(serverItem);
+      return;
+    }
+    existing.quantity = serverItem.quantity;
+    if (typeof serverItem.price === "number") {
+      existing.price = serverItem.price;
+    }
+  });
+  return merged;
+};
+
 export const syncCart = createAsyncThunk(
   "cart/syncCart",
   async (_, { getState }) => {
     const state = getState() as { cart: CartState };
-    const user = await getUserData();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (user) {
-      const productIds = state.cart.cart;
-      const { error } = await supabase
-        .from("cart")
-        .upsert(
-          { uid: user.id, products: productIds },
-          { onConflict: "uid" }
-        );
+      await new Promise<void>((resolve, reject) => {
+        if (syncCartDebounceTimer) clearTimeout(syncCartDebounceTimer);
 
-      if (error) {
-        console.error("Error syncing cart with backend:", error);
-        throw error;
+        syncCartDebounceTimer = setTimeout(async () => {
+          try {
+            const { error } = await supabase
+              .from("cart")
+              .upsert({ uid: user.id, products: state.cart.cart }, { onConflict: "uid" });
+            if (error) return reject(error);
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        }, 500);
+      });
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cart", JSON.stringify(state.cart.cart));
       }
+    }
+  }
+);
+
+export const syncCartNow = createAsyncThunk(
+  "cart/syncCartNow",
+  async (_, { getState }) => {
+    const state = getState() as { cart: CartState };
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    if (syncCartDebounceTimer) {
+      clearTimeout(syncCartDebounceTimer);
+      syncCartDebounceTimer = null;
+    }
+
+    const { error } = await supabase
+      .from("cart")
+      .upsert({ uid: user.id, products: state.cart.cart }, { onConflict: "uid" });
+
+    if (error) throw error;
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cart", JSON.stringify(state.cart.cart));
     }
   }
 );
@@ -43,10 +98,12 @@ export const syncFavorites = createAsyncThunk(
   "cart/syncFavorites",
   async (_, { getState }) => {
     const state = getState() as { cart: CartState };
-    const user = await getUserData();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (user) {
-      const { data, error } = await supabase.from("favorites").upsert(
+      const { error } = await supabase.from("favorites").upsert(
         {
           uid: user.id,
           product_ids: state.cart.favorites,
@@ -56,15 +113,74 @@ export const syncFavorites = createAsyncThunk(
         }
       );
 
-      if (error) {
-        console.log("Detailed Sync Error:", {
-          message: error.message,
-          details: error.details,
-          code: error.code,
-        });
-        throw error;
-      }
+      if (error) throw error;
     }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("favorites", JSON.stringify(state.cart.favorites));
+    }
+  }
+);
+
+export const loadCartFromServer = createAsyncThunk(
+  "cart/loadCartFromServer",
+  async () => {
+    const localCart =
+      typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("cart") || "[]")
+        : [];
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return localCart;
+
+    const { data } = await supabase
+      .from("cart")
+      .select("products")
+      .eq("uid", user.id)
+      .single();
+
+    const serverCart = (data?.products || []) as {
+      id: number;
+      quantity: number;
+      price: number;
+    }[];
+
+    const merged = mergeCarts(localCart, serverCart);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cart", JSON.stringify(merged));
+    }
+    return merged;
+  }
+);
+
+export const loadFavoritesFromServer = createAsyncThunk(
+  "cart/loadFavoritesFromServer",
+  async () => {
+    const localFavorites =
+      typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("favorites") || "[]")
+        : [];
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return localFavorites;
+
+    const { data } = await supabase
+      .from("favorites")
+      .select("product_ids")
+      .eq("uid", user.id)
+      .single();
+
+    const merged = Array.from(
+      new Set([...(localFavorites as number[]), ...((data?.product_ids || []) as number[])])
+    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem("favorites", JSON.stringify(merged));
+    }
+    return merged;
   }
 );
 
@@ -74,21 +190,8 @@ const cartSlice = createSlice({
   reducers: {
     initializeFromStorage: (state) => {
       if (!state.isInitialized && typeof window !== "undefined") {
-        let cart = localStorage.getItem("cart");
-        let favorites = localStorage.getItem("favorites");
-        const syncCartFav = async () => {
-          const user = await getUserData();
-          if(user){
-            const { data } = await supabase.from('cart').select('products').eq('uid', user.id).single();
-            cart = data?.products || [];
-            localStorage.setItem("cart", JSON.stringify(cart));
-
-            const { data: favData } = await supabase.from('favorites').select('product_ids').eq('uid', user.id).single();
-            favorites = favData?.product_ids || [];
-            localStorage.setItem("favorites", JSON.stringify(favorites));
-          }
-        }
-        syncCartFav();
+        const cart = localStorage.getItem("cart");
+        const favorites = localStorage.getItem("favorites");
         state.cart = cart ? JSON.parse(cart) : [];
         state.favorites = favorites ? JSON.parse(favorites) : [];
         state.isInitialized = true;
@@ -152,7 +255,12 @@ const cartSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Optional: Add handlers for async thunk pending/fulfilled/rejected states if needed
+    builder.addCase(loadCartFromServer.fulfilled, (state, action) => {
+      state.cart = Array.isArray(action.payload) ? action.payload : state.cart;
+    });
+    builder.addCase(loadFavoritesFromServer.fulfilled, (state, action) => {
+      state.favorites = Array.isArray(action.payload) ? action.payload : state.favorites;
+    });
   },
 });
 

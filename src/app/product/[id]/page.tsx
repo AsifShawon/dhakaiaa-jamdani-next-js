@@ -136,7 +136,7 @@ const Page = () => {
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": product.rating || 4.5,
-        "reviewCount": Math.floor(Math.random() * 100) + 10
+        "reviewCount": Number(product.review_count || 0)
       }
     };
   };

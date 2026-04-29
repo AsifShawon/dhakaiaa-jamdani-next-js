@@ -310,6 +310,14 @@ const Analytics = () => {
               Sales by Category
             </h3>
             <div className="space-y-4">
+              {analyticsData.charts.categoryBreakdown.length === 0 && (
+                <p className={clsx("text-sm", {
+                  "text-gray-600": theme === "light",
+                  "text-gray-400": theme === "dark",
+                })}>
+                  No data yet
+                </p>
+              )}
               {analyticsData.charts.categoryBreakdown.map((category: CategoryData, index: number) => {
                 const percentage = (category.value / analyticsData.overview.totalRevenue) * 100;
                 return (
@@ -351,6 +359,14 @@ const Analytics = () => {
               Top Selling Products
             </h3>
             <div className="space-y-4">
+              {analyticsData.charts.topProducts.length === 0 && (
+                <p className={clsx("text-sm", {
+                  "text-gray-600": theme === "light",
+                  "text-gray-400": theme === "dark",
+                })}>
+                  No data yet
+                </p>
+              )}
               {analyticsData.charts.topProducts.map((product: TopProduct, index: number) => (
                 <motion.div
                   key={product.id}

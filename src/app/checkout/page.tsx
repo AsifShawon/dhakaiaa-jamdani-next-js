@@ -1,34 +1,34 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import {
-  initializeFromStorage,
-  clearCart,
-  decrementQuantity,
-  incrementQuantity,
-} from "@/app/slices/cartSlice";
+ "use client";
+import { useMemo, useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, CreditCard, Truck, Check } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, Check, MessageCircle, Truck } from "lucide-react";
+import { saveOrder } from "../api/orders";
 import { fetchProducts } from "../slices/productSlices";
 import { getUserData, userProfile, UserProfile } from "../auth/getUser";
 import { User } from "@supabase/supabase-js";
-import { saveOrder } from "../api/orders";
-import { sendMail } from "../api/send-order-email";
-import { sendAdminNotification } from "../api/send-admin-notification";
-
-interface CheckoutStep {
-  title: string;
-  icon: JSX.Element;
-}
+import {
+  initializeFromStorage,
+  clearCart,
+  syncCart,
+  syncCartNow,
+  decrementQuantity,
+  incrementQuantity,
+  loadCartFromServer,
+} from "@/app/slices/cartSlice";
 
 const Page = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userData, setUserData] = useState<UserProfile | null>(null);
-  const [data, setData] = useState<User | null>(null);
-
+  const router = useRouter();
+  const dispatch = useDispatch<any>();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+  const [placedOrderId, setPlacedOrderId] = useState<number | null>(null);
+  const [userData, setUserData] = useState<UserProfile | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
-    // Shipping Info
     firstName: "",
     lastName: "",
     email: "",
@@ -38,222 +38,128 @@ const Page = () => {
     postalCode: "",
   });
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getUserData();
-      setData(user);
-    };
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const userData = await userProfile();
-      setUserData(userData);
-    };
-    fetchUserData();
-  }, []);
-
-  // Update form data when user data is available
-  useEffect(() => {
-    if (userData || data) {
-      setFormData(prev => ({
-        ...prev,
-        firstName: userData?.firstname || prev.firstName,
-        lastName: userData?.lastname || prev.lastName,
-        email: data?.email || prev.email,
-      }));
-    }
-  }, [userData, data]);
-
-  const router = useRouter();
-  const dispatch = useDispatch();
   const cartItems = useSelector((state: any) => state.cart.cart);
-  const { products, status, error } = useSelector(
-    (state: any) => state.products
-  );
-
-  const steps: CheckoutStep[] = [
-    { title: "Shipping", icon: <Truck className="w-5 h-5" /> },
-    { title: "Payment", icon: <CreditCard className="w-5 h-5" /> },
-    { title: "Confirmation", icon: <Check className="w-5 h-5" /> },
-  ];
+  const { products, status } = useSelector((state: any) => state.products);
 
   useEffect(() => {
     dispatch(initializeFromStorage());
-    dispatch(fetchProducts() as any);
+    dispatch(loadCartFromServer());
+    dispatch(fetchProducts());
   }, [dispatch]);
 
-  const cartProducts = cartItems.map((item: any) => {
-    const product = products?.find((p: any) => p.id === item.id);
-    return {
-      ...product,
-      quantity: item.quantity,
-    };
-  });
+  useEffect(() => {
+    getUserData().then(setAuthUser);
+    userProfile().then(setUserData);
+  }, []);
+
+  useEffect(() => {
+    if (!userData && !authUser) return;
+    setFormData((prev) => ({
+      ...prev,
+      firstName: userData?.firstname || prev.firstName,
+      lastName: userData?.lastname || prev.lastName,
+      email: authUser?.email || prev.email,
+    }));
+  }, [userData, authUser]);
+
+  useEffect(() => {
+    if (placedOrderId) {
+      const timeout = setTimeout(() => {
+        router.push(`/order-confirmation?orderId=${placedOrderId}`);
+      }, 1200);
+      return () => clearTimeout(timeout);
+    }
+  }, [placedOrderId, router]);
+
+  const cartProducts = useMemo(
+    () =>
+      cartItems
+        .map((item: any) => {
+          const product = products?.find((p: any) => p.id === item.id);
+          return product ? { ...product, quantity: item.quantity } : null;
+        })
+        .filter(Boolean),
+    [cartItems, products]
+  );
 
   const subtotal = cartProducts.reduce(
     (acc: number, item: any) => acc + item.price * item.quantity,
     0
   );
-  const shipping = 100; // Fixed shipping cost
-  const total: number = subtotal + shipping;
+  const shipping = 100;
+  const total = subtotal + shipping;
 
-  // In your component
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      try {
-        setIsSubmitting(true);
-
-        console.log("Submitting order...", data);
-        if (!data?.id) {
-          throw new Error("User not authenticated");
-        }
-
-        if (cartProducts.length === 0) {
-          throw new Error("Cart is empty");
-        }
-
-        // Validate form data
-        const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'postalCode'];
-        for (const field of requiredFields) {
-          if (!formData[field as keyof typeof formData]) {
-            throw new Error(`${field} is required`);
-          }
-        }
-
-        console.log("Starting order submission...");
-        // console.log("User ID:", data.id);
-        // console.log("Cart products:", cartProducts);
-        // console.log("Form data:", formData);
-        // console.log("Total:", total);
-
-        const orderData = {
-          uid: data.id,
-          status: "processing" as const,
-          total: total,
-          products: cartProducts.map((p: { id: number; quantity: number }) => ({
-            id: p.id,
-            quantity: p.quantity,
-          })) as unknown as JSON[],
-          order_info: formData as unknown as JSON
-        };
-
-        console.log("Order data to be saved:", orderData);
-
-        // Test database connection first
-        console.log("Testing database connection...");
-        
-        // Save order to database
-        try {
-          console.log("Attempting to save order...");
-          const order = await saveOrder(orderData);
-          console.log("Order saved successfully:", order);
-
-          const ordered_products_id = cartProducts.map((p: { id: number }) => p.id);
-          const ordered_products = products?.filter((p: any) =>
-            ordered_products_id.includes(p.id)
-          );
-
-          console.log("Sending email...");
-          try {
-            const emailResponse = await sendMail(
-              "Order Confirmation",
-              order,
-              formData,
-              ordered_products
-            );
-            console.log("Email sent successfully:", emailResponse);
-          } catch (emailError) {
-            console.warn("Email failed to send but order was saved:", emailError);
-            // Don't throw here - order is already saved, email failure shouldn't stop the process
-          }
-
-          // Send admin notification
-          console.log("Sending admin notification...");
-          try {
-            await sendAdminNotification({
-              notificationType: 'New Order Placed',
-              orderId: (order.id || 'unknown').toString(),
-              orderStatus: order.status,
-              orderDate: order.created_at || new Date().toISOString(),
-              orderTotal: order.total,
-              customerName: `${formData.firstName} ${formData.lastName}`,
-              customerEmail: formData.email,
-              customerPhone: formData.phone,
-              customerAddress: `${formData.address}, ${formData.city}, ${formData.postalCode}`,
-              products: ordered_products?.map((product: any) => ({
-                title: product.title,
-                quantity: cartProducts.find((cp: any) => cp.id === product.id)?.quantity || 1,
-                price: product.price || 0
-              }))
-            });
-            console.log("Admin notification sent successfully");
-          } catch (adminEmailError) {
-            console.warn("Admin notification failed to send but order was saved:", adminEmailError);
-            // Don't throw here - order is already saved, admin email failure shouldn't stop the process
-          }
-
-          dispatch(clearCart());
-          alert("Order placed successfully!");
-          router.push('/dashboard/orders');
-        } catch (orderError) {
-          console.error("Failed to save order:", orderError);
-          console.error("Order error details:", JSON.stringify(orderError, null, 2));
-          
-          // Check if it's a Supabase error
-          if (orderError && typeof orderError === 'object' && 'message' in orderError) {
-            throw new Error(`Database error: ${(orderError as any).message}`);
-          } else {
-            throw new Error(`Failed to save order: ${orderError instanceof Error ? orderError.message : JSON.stringify(orderError)}`);
-          }
-        }
-      } catch (error) {
-        console.error("Order submission error:", error);
-        
-        // Better error handling
-        let errorMessage = "Order submission failed. Please try again.";
-        
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        } else if (error && typeof error === 'object') {
-          // Handle API errors that might have a message property
-          const apiError = error as any;
-          if (apiError.message) {
-            errorMessage = apiError.message;
-          } else if (apiError.error) {
-            errorMessage = apiError.error;
-          } else {
-            errorMessage = `Order submission failed: ${JSON.stringify(error)}`;
-          }
-        }
-        
-        alert(errorMessage);
-      } finally {
-        setIsSubmitting(false);
+  const validateShipping = () => {
+    const errors: Record<string, string> = {};
+    ["firstName", "lastName", "email", "phone", "address", "city", "postalCode"].forEach(
+      (key) => {
+        if (!formData[key as keyof typeof formData]?.trim()) errors[key] = "Required";
       }
-    }
+    );
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  if (status === "loading" || !products) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-  if (status === "failed") {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        <p>Error: {error}</p>
-      </div>
-    );
-  }
+  const placeOrder = async () => {
+    if (!authUser?.id) return setSubmissionError("Please login to place order.");
+    if (cartProducts.length === 0) return setSubmissionError("Cart is empty.");
+    setSubmissionError("");
+    setIsSubmitting(true);
+    try {
+      const order = await saveOrder({
+        uid: authUser.id,
+        status: "processing",
+        total,
+        products: cartProducts.map((p: any) => ({ id: p.id, quantity: p.quantity })) as any,
+        order_info: formData as any,
+      });
+
+      const orderedProductDetails = cartProducts.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        quantity: p.quantity,
+        price: p.price,
+      }));
+
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "order_confirmation",
+          orderId: order.id,
+          ...formData,
+          total: order.total,
+          products: orderedProductDetails,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          customerEmail: formData.email,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          phone: formData.phone,
+        }),
+      });
+
+      await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "order",
+          title: `New order #${order.id}`,
+          message: `${formData.firstName} ${formData.lastName} placed an order totaling ৳${order.total}.`,
+        }),
+      });
+
+      dispatch(clearCart());
+      await dispatch(syncCartNow());
+      setCurrentStep(2);
+      setPlacedOrderId(order.id as number);
+    } catch (error: any) {
+      setSubmissionError(error?.message || "Failed to place order.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -261,314 +167,101 @@ const Page = () => {
       ...prev,
       [name]: value,
     }));
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
   };
-
-  const OrderSummary = () => {
-    if (!cartProducts.length) {
-      return (
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-            <p>Your cart is empty</p>
-          </div>
-        </div>
-      );
+  const nextStep = async () => {
+    if (currentStep === 0) {
+      if (!validateShipping()) return;
+      setCurrentStep(1);
+      return;
     }
-    return null;
-  };
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <div className="space-y-4 pt">
-            <h2 className="text-xl font-semibold mb-6">Shipping Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">First Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Last Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Email</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Phone</span>
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-              <div className="form-control md:col-span-2">
-                <label className="label">
-                  <span className="label-text">Address</span>
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">City</span>
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Postal Code</span>
-                </label>
-                <input
-                  type="text"
-                  name="postalCode"
-                  value={formData.postalCode}
-                  onChange={handleInputChange}
-                  className="input input-bordered"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        );
-      // case 1:
-      //   return (
-      //     <div className="space-y-4">
-      //       <h2 className="text-xl font-semibold mb-6">Payment Information</h2>
-      //       <div className="form-control">
-      //         <label className="label">
-      //           <span className="label-text">Card Number</span>
-      //         </label>
-      //         <input
-      //           type="text"
-      //           name="cardNumber"
-      //           value={formData.cardNumber}
-      //           onChange={handleInputChange}
-      //           className="input input-bordered"
-      //           placeholder="1234 5678 9012 3456"
-      //           required
-      //         />
-      //       </div>
-      //       <div className="form-control">
-      //         <label className="label">
-      //           <span className="label-text">Cardholder Name</span>
-      //         </label>
-      //         <input
-      //           type="text"
-      //           name="cardName"
-      //           value={formData.cardName}
-      //           onChange={handleInputChange}
-      //           className="input input-bordered"
-      //           required
-      //         />
-      //       </div>
-      //       <div className="grid grid-cols-2 gap-4">
-      //         <div className="form-control">
-      //           <label className="label">
-      //             <span className="label-text">Expiry Date</span>
-      //           </label>
-      //           <input
-      //             type="text"
-      //             name="expiryDate"
-      //             value={formData.expiryDate}
-      //             onChange={handleInputChange}
-      //             className="input input-bordered"
-      //             placeholder="MM/YY"
-      //             required
-      //           />
-      //         </div>
-      //         <div className="form-control">
-      //           <label className="label">
-      //             <span className="label-text">CVV</span>
-      //           </label>
-      //           <input
-      //             type="text"
-      //             name="cvv"
-      //             value={formData.cvv}
-      //             onChange={handleInputChange}
-      //             className="input input-bordered"
-      //             placeholder="123"
-      //             required
-      //           />
-      //         </div>
-      //       </div>
-      //     </div>
-      //   );
-      case 1:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-6">Order Confirmation</h2>
-            <div className="bg-base-200 p-6 rounded-lg space-y-4">
-              <h3 className="font-semibold">Shipping Address</h3>
-              <p>
-                {formData.firstName} {formData.lastName}
-                <br />
-                {formData.address}
-                <br />
-                {formData.city}, {formData.postalCode}
-                <br />
-                {formData.phone}
-                <br />
-                {formData.email}
-              </p>
-            </div>
-            <div className="bg-base-200 p-6 rounded-lg space-y-4">
-              <h3 className="font-semibold">Payment Method</h3>
-              <p className="text-green-700">Cash On Delivery</p>
-            </div>
-          </div>
-        );
-      // Add this case to renderStepContent function
-      case 2:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-6">Order Confirmation</h2>
-            <div className="bg-base-200 p-6 rounded-lg space-y-4">
-              <h3 className="font-semibold">Order Summary</h3>
-              {cartProducts.map((item: any) => (
-                <div key={item.id} className="flex justify-between">
-                  <span>
-                    {item.title} x {item.quantity}
-                  </span>
-                  <span>৳{(item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="divider"></div>
-              <div className="flex justify-between font-semibold">
-                <span>Total:</span>
-                <span>৳{total.toFixed(2)}</span>
-              </div>
-            </div>
-            <div className="bg-base-200 p-6 rounded-lg space-y-4">
-              <h3 className="font-semibold">Shipping Address</h3>
-              <p>
-                {formData.firstName} {formData.lastName}
-                <br />
-                {formData.address}
-                <br />
-                {formData.city}, {formData.postalCode}
-                <br />
-                {formData.phone}
-                <br />
-                {formData.email}
-              </p>
-            </div>
-          </div>
-        );
-      default:
-        return null;
+    if (currentStep === 1) {
+      await placeOrder();
     }
   };
 
   return (
     <div className="container mx-auto px-4 py-8 pt-24 pb-10">
       <div className="max-w-6xl mx-auto">
-        {/* Stepper */}
         <ul className="steps w-full mb-8">
-          {steps.map((step, index) => (
-            <li
-              key={step.title}
-              className={`step ${index <= currentStep ? "step-primary" : ""}`}
-              data-content={index <= currentStep ? "✓" : ""}
-            >
-              <div className="flex items-center gap-2">
-                {step.icon}
-                <span>{step.title}</span>
-              </div>
-            </li>
+          {["Shipping Info", "Review & Confirm", "Success"].map((step, index) => (
+            <li key={step} className={`step ${index <= currentStep ? "step-primary" : ""}`}>{step}</li>
           ))}
         </ul>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form */}
           <div className="lg:col-span-2">
-            <form
-              onSubmit={handleSubmit}
-              className="card bg-base-100 shadow-xl"
-            >
+            <form onSubmit={(e) => e.preventDefault()} className="card bg-base-100 shadow-xl">
               <div className="card-body">
-                {renderStepContent()}
+                {currentStep === 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      ["firstName", "First Name"],
+                      ["lastName", "Last Name"],
+                      ["email", "Email"],
+                      ["phone", "Phone"],
+                      ["city", "City"],
+                      ["postalCode", "Postal Code"],
+                    ].map(([key, label]) => (
+                      <div key={key} className="form-control">
+                        <label className="label"><span className="label-text">{label}</span></label>
+                        <input name={key} value={(formData as any)[key]} onChange={handleInputChange} className={`input input-bordered ${fieldErrors[key] ? "input-error" : ""}`} />
+                        {fieldErrors[key] && <p className="text-error text-xs mt-1">{fieldErrors[key]}</p>}
+                      </div>
+                    ))}
+                    <div className="form-control md:col-span-2">
+                      <label className="label"><span className="label-text">Address</span></label>
+                      <input name="address" value={formData.address} onChange={handleInputChange} className={`input input-bordered ${fieldErrors.address ? "input-error" : ""}`} />
+                      {fieldErrors.address && <p className="text-error text-xs mt-1">{fieldErrors.address}</p>}
+                    </div>
+                  </div>
+                )}
 
-                <div className="flex justify-between mt-6">
+                {currentStep === 1 && (
+                  <div className="space-y-4">
+                    <div className="alert alert-success"><Truck className="w-4 h-4" /> Cash on Delivery: Please keep ৳{total.toFixed(2)} ready.</div>
+                    <div className="bg-base-200 p-4 rounded-lg">
+                      <h3 className="font-semibold mb-2">Shipping Address</h3>
+                      <p>{formData.firstName} {formData.lastName}, {formData.address}, {formData.city} {formData.postalCode}, {formData.phone}</p>
+                    </div>
+                    <p className="text-sm text-base-content/70">Estimated delivery: 3-7 business days.</p>
+                  </div>
+                )}
+
+                {currentStep === 2 && (
+                  <div className="text-center py-10 space-y-3">
+                    <div className="w-14 h-14 rounded-full bg-green-100 text-green-700 mx-auto flex items-center justify-center"><Check /></div>
+                    <h2 className="text-2xl font-bold">Order placed successfully</h2>
+                    <p>Redirecting to order confirmation...</p>
+                    <Link href={`https://wa.me/8801711461083?text=Hi, I need help with order #${placedOrderId || ""}`} target="_blank" className="btn btn-outline">
+                      <MessageCircle className="w-4 h-4" /> WhatsApp Order Inquiry
+                    </Link>
+                  </div>
+                )}
+
+                {submissionError && <p className="text-error mt-3">{submissionError}</p>}
+
+                <div className="flex justify-between mt-6 items-center">
                   <button
                     type="button"
                     onClick={() => setCurrentStep(currentStep - 1)}
-                    className={`btn btn-outline ${
-                      currentStep === 0 ? "invisible" : ""
-                    }`}
+                    className={`btn btn-outline ${currentStep === 0 || currentStep === 2 ? "invisible" : ""}`}
                   >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back
+                    <ArrowLeft className="w-4 h-4 mr-2" />Back
                   </button>
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={nextStep}
                     className="btn btn-primary"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || currentStep === 2 || status === "loading"}
                   >
-                    {isSubmitting ? (
-                      <span className="loading loading-spinner"></span>
-                    ) : currentStep === steps.length - 1 ? (
-                      "Place Order"
-                    ) : (
-                      <>
-                        Next
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
+                    {isSubmitting ? <span className="loading loading-spinner"></span> : currentStep === 1 ? "Place Order" : <>Next <ArrowRight className="w-4 h-4 ml-2" /></>}
                   </button>
                 </div>
               </div>
             </form>
           </div>
 
-          {/* Order Summary */}
           <div className="lg:col-span-1">
             <div className="card bg-base-100 shadow-xl">
               <div className="card-body">
@@ -582,8 +275,12 @@ const Page = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => dispatch(decrementQuantity(item.id))}
+                            onClick={() => {
+                              dispatch(decrementQuantity(item.id));
+                              dispatch(syncCart());
+                            }}
                             className="btn btn-xs btn-ghost"
+                            type="button"
                           >
                             -
                           </button>
@@ -591,8 +288,12 @@ const Page = () => {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => dispatch(incrementQuantity(item.id))}
+                            onClick={() => {
+                              dispatch(incrementQuantity(item.id));
+                              dispatch(syncCart());
+                            }}
                             className="btn btn-xs btn-ghost"
+                            type="button"
                           >
                             +
                           </button>

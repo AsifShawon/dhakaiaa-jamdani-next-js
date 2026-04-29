@@ -88,14 +88,8 @@ export const fetchAnalyticsData = async (dateRange: string) => {
     const monthlyRevenue = generateMonthlyData(orders, 'revenue', dateRange);
     const monthlyOrders = generateMonthlyData(orders, 'count', dateRange);
 
-    // Category breakdown
     const categoryBreakdown = generateCategoryBreakdown(orders, products);
-
-    // Top products (mock data for now)
-    const topProducts = products.slice(0, 5).map(product => ({
-      ...product,
-      sales: Math.floor(Math.random() * 50) + 10
-    })).sort((a, b) => b.sales - a.sales);
+    const topProducts = generateTopProducts(orders, products);
 
     return {
       overview: {
@@ -167,4 +161,37 @@ const generateCategoryBreakdown = (orders: any[], products: any[]) => {
     name,
     value
   })).sort((a, b) => b.value - a.value);
+};
+
+const generateTopProducts = (orders: any[], products: any[]) => {
+  const productSalesMap: Record<number, { sales: number; revenue: number }> = {};
+
+  orders.forEach((order) => {
+    (order.products || []).forEach((orderProduct: any) => {
+      const productId = Number(orderProduct.id);
+      const quantity = Number(orderProduct.quantity || 1);
+      const product = products.find((p) => Number(p.id) === productId);
+      if (!product) return;
+
+      if (!productSalesMap[productId]) {
+        productSalesMap[productId] = { sales: 0, revenue: 0 };
+      }
+      productSalesMap[productId].sales += quantity;
+      productSalesMap[productId].revenue += Number(product.price || 0) * quantity;
+    });
+  });
+
+  return Object.entries(productSalesMap)
+    .map(([id, stat]) => {
+      const product = products.find((p) => Number(p.id) === Number(id));
+      return {
+        ...(product || {}),
+        id: Number(id),
+        sales: stat.sales,
+        revenue: stat.revenue,
+      };
+    })
+    .filter((p) => !!p.title)
+    .sort((a, b) => b.sales - a.sales)
+    .slice(0, 5);
 };

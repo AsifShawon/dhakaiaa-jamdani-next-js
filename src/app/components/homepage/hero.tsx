@@ -5,16 +5,16 @@ import Link from "next/link";
 
 const Hero = () => {
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <section className="relative min-h-[calc(100vh-4.5rem)] lg:h-[calc(100vh-4.5rem)] flex items-center justify-center overflow-hidden bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Background Pattern - Fixed positioning and pointer events */}
       <div className="absolute inset-0 opacity-10 dark:opacity-5 pointer-events-none z-0">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ef4444%22 fill-opacity=%220.1%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%224%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
       </div>
 
-      <div className="container mx-auto px-4 py-10 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="container mx-auto px-4 py-6 lg:py-4 h-full relative z-10">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center h-full">
           {/* Left Content */}
-          <div className="space-y-8 relative z-20">
+          <div className="space-y-6 lg:space-y-7 relative z-20">
             <div className="space-y-4">
               <div className="inline-block">
                 {/* Logo */}
@@ -32,7 +32,7 @@ const Hero = () => {
                 </span>
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-bold text-gray-900 dark:text-white leading-tight">
+              <h1 className="text-4xl md:text-6xl xl:text-7xl font-bold text-gray-900 dark:text-white leading-tight">
                 <span className="bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                   ঢাকাইয়া
                 </span>
@@ -40,14 +40,14 @@ const Hero = () => {
                 <span className="text-gray-800 dark:text-gray-200">জামদানি</span>
               </h1>
               
-              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-lg leading-relaxed">
+              <p className="text-lg xl:text-xl text-gray-600 dark:text-gray-300 max-w-lg leading-relaxed">
                 Discover the timeless elegance of traditional Bangladeshi craftsmanship. 
                 Each piece tells a story of heritage, artistry, and cultural pride.
               </p>
             </div>
 
             {/* Buttons - Simplified without hydration issues */}
-            <div className="absolute flex flex-col sm:flex-row gap-4 z-50">
+            <div className="flex flex-col sm:flex-row gap-4 z-50">
               <Link href="/Shop" className="relative hidden md:block">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -88,10 +88,10 @@ const Hero = () => {
 
           {/* Right Content - Product Showcase */}
           <div className="relative z-10">
-            <div className="relative grid grid-cols-2 gap-6">
+            <div className="relative grid grid-cols-2 gap-4 lg:gap-5">
               {/* Main Featured Product */}
               <div className="col-span-2 relative group">
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+                <div className="relative aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl">
                   <Image
                     src="/images/sharee_1.webp"
                     alt="Featured Sharee"
@@ -117,7 +117,7 @@ const Hero = () => {
 
               {/* Secondary Products */}
               <div className="relative group">
-                <div className="relative aspect-square rounded-xl overflow-hidden shadow-lg">
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src="/images/panjabi_1.webp"
                     alt="Panjabi Collection"
@@ -137,7 +137,7 @@ const Hero = () => {
               </div>
 
               <div className="relative group">
-                <div className="relative aspect-square rounded-xl overflow-hidden shadow-lg">
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-lg">
                   <Image
                     src="/images/threepcs_1.webp"
                     alt="Three Piece Collection"
@@ -165,7 +165,7 @@ const Hero = () => {
       </div>
 
       {/* Scroll Indicator - Simplified */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 hidden lg:block">
         <motion.div
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
@@ -178,7 +178,7 @@ const Hero = () => {
           />
         </motion.div>
       </div>
-    </div>
+    </section>
   );
 };
 

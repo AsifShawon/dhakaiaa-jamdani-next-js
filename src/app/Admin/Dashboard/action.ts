@@ -2,7 +2,12 @@ import { supabase } from "@/app/utils/supabase/supabaseClient";
 
 export const fetchDashboardStats = async () => {
   try {
-    // Fetch total orders
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(endDate.getMonth() - 1);
+    const previousStartDate = new Date(startDate);
+    previousStartDate.setTime(previousStartDate.getTime() - (endDate.getTime() - startDate.getTime()));
+
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select('*');
@@ -24,10 +29,22 @@ export const fetchDashboardStats = async () => {
     
     if (customersError) throw customersError;
 
-    // Calculate total revenue
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const currentPeriodOrders = orders.filter(
+      (order) => new Date(order.created_at) >= startDate && new Date(order.created_at) <= endDate
+    );
+    const previousPeriodOrders = orders.filter(
+      (order) => new Date(order.created_at) >= previousStartDate && new Date(order.created_at) < startDate
+    );
 
-    // Get recent orders (last 5)
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const currentRevenue = currentPeriodOrders.reduce((sum, order) => sum + order.total, 0);
+    const previousRevenue = previousPeriodOrders.reduce((sum, order) => sum + order.total, 0);
+    const revenueGrowth = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+    const orderGrowth =
+      previousPeriodOrders.length > 0
+        ? ((currentPeriodOrders.length - previousPeriodOrders.length) / previousPeriodOrders.length) * 100
+        : 0;
+
     const recentOrders = orders
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
@@ -36,17 +53,15 @@ export const fetchDashboardStats = async () => {
     const monthlyRevenue = generateMonthlyData(orders, 'revenue');
     const orderTrends = generateMonthlyData(orders, 'count');
 
-    // Get top products (mock data for now)
-    const topProducts = products.slice(0, 5).map(product => ({
-      ...product,
-      sales: Math.floor(Math.random() * 100) + 10
-    }));
+    const topProducts = generateTopProducts(orders, products);
 
     return {
       totalOrders: orders.length,
       totalRevenue,
       totalProducts: products.length,
       totalCustomers: customers.length,
+      revenueGrowth,
+      orderGrowth,
       recentOrders,
       monthlyRevenue,
       orderTrends,
@@ -83,6 +98,27 @@ const generateMonthlyData = (orders: any[], type: 'revenue' | 'count') => {
   }
   
   return months;
+};
+
+const generateTopProducts = (orders: any[], products: any[]) => {
+  const productSalesMap: Record<number, number> = {};
+
+  orders.forEach((order) => {
+    (order.products || []).forEach((orderProduct: any) => {
+      const productId = Number(orderProduct.id);
+      const quantity = Number(orderProduct.quantity || 1);
+      productSalesMap[productId] = (productSalesMap[productId] || 0) + quantity;
+    });
+  });
+
+  return Object.entries(productSalesMap)
+    .map(([id, sales]) => {
+      const product = products.find((p) => Number(p.id) === Number(id));
+      return product ? { ...product, sales } : null;
+    })
+    .filter(Boolean)
+    .sort((a: any, b: any) => b.sales - a.sales)
+    .slice(0, 5);
 };
 
 export const fetchNotifications = async () => {

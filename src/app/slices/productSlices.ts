@@ -81,7 +81,7 @@ export const fetchProducts = createAsyncThunk(
       .map(product => ({
         ...product,
         discounted_price: product.price - ((product.price * product.discount) / 100),
-        rating: product.rating || Math.floor(Math.random() * 2) + 4 // Mock rating for demo
+        rating: typeof product.rating === "number" ? product.rating : 0
       }))
       // Re-filter based on discounted price if price filters are set
       .filter(product => {

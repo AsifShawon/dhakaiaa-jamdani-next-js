@@ -17,7 +17,7 @@ export const addProduct = async (productData: FormData) => {
       image_urls: image_url,
       image_bucket_path: Id,
     },
-  ]);
+  ]).select().single();
 
   if (error) {
     console.error("Error inserting product:", error);
@@ -151,62 +151,29 @@ export const updateProduct = async (
 
 // Delete Product <<
 export const deleteProduct = async (productId: number) => {
-  // First, get the product's image IDs
-  const { data: product, error: fetchError } = await supabase
+  const { data: product } = await supabase
     .from("products")
-    .select("image_bucket_path")
+    .select("image_bucket_path, image_urls")
     .eq("id", productId)
     .single();
 
-  // console.log("product", product);
-  if (fetchError) {
-    console.error("Error fetching product:", fetchError);
-    throw fetchError;
-  }
-
-  // Delete images from storage
-  if (product.image_bucket_path) {
-    console.log("Deleting images from storage:", product.image_bucket_path);
-    const folderPath = `${product.image_bucket_path}/`;
-    const { data: files, error: listError } = await supabase.storage
-    .from("product_images")
-    .list(folderPath);
-
-    if (listError) {
-      console.error("Error listing images:", listError);
-      throw listError;
-    }
+  if (product?.image_bucket_path) {
+    const { data: files } = await supabase.storage
+      .from("product_images")
+      .list(`products/${product.image_bucket_path}`);
 
     if (files && files.length > 0) {
-      const filePaths = files.map((file: { name: string }) => `${folderPath}${file.name}`);
-  
-      // Delete all files in the folder
-      const { data, error: storageError } = await supabase.storage
+      const paths = files.map(
+        (f: { name: string }) => `products/${product.image_bucket_path}/${f.name}`
+      );
+      await supabase.storage
         .from("product_images")
-        .remove(filePaths);
-  
-      if (storageError) {
-        console.error("Error deleting images:", storageError);
-        throw storageError;
-      }
-  
-      console.log("Files deleted successfully:", data);
-    } else {
-      console.log("No files found in the folder to delete.");
+        .remove(paths);
     }
   }
 
-  // Delete the product record
-  // const { error: deleteError } = await supabase
-  //   .from("products")
-  //   .delete()
-  //   .eq("id", productId);
+  const { error } = await supabase.from("products").delete().eq("id", productId);
+  if (error) throw error;
 
-  // if (deleteError) {
-  //   console.error("Error deleting product:", deleteError);
-  //   throw deleteError;
-  // } else {
-  //   console.log("Product deleted successfully");
-  //   alert("Product deleted successfully");
-  // }
+  return { success: true };
 };

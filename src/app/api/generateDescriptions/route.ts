@@ -1,6 +1,5 @@
+import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
 export async function POST(req: Request) {
   try {
@@ -13,74 +12,40 @@ export async function POST(req: Request) {
       );
     }
 
-    const model = new ChatGoogleGenerativeAI({
-      model: "gemini-1.5-flash",
-      apiKey: process.env.GEMINI_API_KEY,
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const systemPrompt = `You are an expert e-commerce SEO copywriter for a traditional Bangladeshi clothing store called Dhakaia Jamdani.
+Generate TWO product descriptions and return ONLY valid JSON with no markdown, no code blocks, no preamble.
+
+JSON format:
+{
+  "short": "50-80 word plain text description, no markdown, SEO-friendly, compelling",
+  "long": "500-800 word detailed description in Markdown format. Include: ## Product Highlights, ## Materials & Craftsmanship, ## Care Instructions, ## Why Choose This. Then add <hr> separator. Then write the SAME content in Bengali (বাংলা). Use proper Markdown headings and bullet points."
+}
+
+If existing description is provided, incorporate it naturally. Always return ONLY the JSON object.`;
+
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Product Title: ${title}\nPrice: ৳${price}\nCategory: ${category}\nExisting Description: ${description || "None"}`,
+        },
+      ],
       temperature: 0.7,
+      max_tokens: 2000,
+      response_format: { type: "json_object" },
     });
 
-    const systemPrompt = `
-You are an expert e-commerce SEO copywriter.
-Generate **two** product descriptions in JSON format:
+    const content = completion.choices[0]?.message?.content;
+    if (!content) throw new Error("No content from Groq");
 
-1. **Short Product Description** ("short"):
-   - 50-80 words
-   - Plain text only (no Markdown, no special characters, no bullet points)
-   - Concise, appealing, and SEO-friendly based on category & product features
-
-2. **Detailed Product Description** ("long"):
-   - 500-1000 words total
-   - Contains **two separate sections**:
-     - English version
-     - Bengali version
-   - Separate the two versions using an <hr> HTML tag
-   - Each version should be rich with SEO keywords
-   - Use Markdown headings, bullet points, and formatting inside each language section
-   - Cover:
-     - Materials
-     - Craftsmanship
-     - Style
-     - Care instructions
-     - Ideal use cases
-   - Include emotional appeal for conversion
-
-If an existing description is provided, incorporate it naturally.
-
-Return ONLY valid JSON:
-{
-  "short": "short plain text description",
-  "long": "long markdown description with <hr> between English and Bengali"
-}
-`;
-
-    const response = await model.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(
-        `Product Title: ${title}
-Price: ${price}
-Category: ${category}
-Existing Description: ${description || "N/A"}`
-      ),
-    ]);
-
-    const textOutput =
-      typeof response.content === "string"
-        ? response.content
-        : Array.isArray(response.content)
-        ? response.content
-            .map((item: any) =>
-              typeof item === "string" ? item : item.text ?? ""
-            )
-            .join("")
-        : "";
-
-    const jsonMatch = textOutput.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Invalid AI output format");
-
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(content);
     return NextResponse.json(parsed);
   } catch (error: any) {
-    console.error("AI generation error:", error);
+    console.error("Groq generation error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to generate descriptions" },
       { status: 500 }

@@ -11,8 +11,27 @@ import store from "./store/store";
 import FloatingCart from "./components/cart";
 import { getActiveOffers } from "./Admin/Offers/action";
 import OfferDisplay from "./components/OfferDisplay";
+import { useDispatch } from "react-redux";
+import {
+  initializeFromStorage,
+  loadCartFromServer,
+  loadFavoritesFromServer,
+} from "./slices/cartSlice";
+import { AppDispatch } from "./store/store";
 
 const inter = Inter({ subsets: ["latin"] });
+
+function CartBootstrap() {
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(initializeFromStorage());
+    dispatch(loadCartFromServer());
+    dispatch(loadFavoritesFromServer());
+  }, [dispatch]);
+
+  return null;
+}
 
 export default function RootClientLayout({
   children,
@@ -44,6 +63,7 @@ export default function RootClientLayout({
   return (
     <Provider store={store}>
       <div className={inter.className}>
+        <CartBootstrap />
         <OfferDisplay offers={offers || []} />
         <Navbar/>
         {children}

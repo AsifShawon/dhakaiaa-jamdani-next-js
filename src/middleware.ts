@@ -1,79 +1,105 @@
 // This middleware sets a strong Content Security Policy (CSP) header for all responses
 // and provides admin route protection
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+const PUBLIC_EXACT_ROUTES = new Set([
+  "/",
+  "/Shop",
+  "/About",
+  "/Contact",
+  "/login",
+  "/Signup",
+  "/privacy",
+  "/terms",
+  "/return",
+  "/faq",
+  "/shipping",
+  "/size-guide",
+]);
+
+function isPublicRoute(pathname: string): boolean {
+  if (PUBLIC_EXACT_ROUTES.has(pathname)) return true;
+
+  return (
+    pathname.startsWith("/Shop/") ||
+    pathname.startsWith("/product/") ||
+    pathname.startsWith("/auth/")
+  );
+}
+
+function isUserProtectedRoute(pathname: string): boolean {
+  return pathname === "/checkout" || pathname.startsWith("/dashboard/");
+}
+
+function withRedirectToLogin(request: NextRequest): NextResponse {
+  const loginUrl = new URL("/login", request.url);
+  const redirectTarget = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  loginUrl.searchParams.set("redirectTo", redirectTarget);
+  return NextResponse.redirect(loginUrl);
+}
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next();
-  
-  // Create Supabase client for server-side authentication
+  const pathname = request.nextUrl.pathname;
+  let response = NextResponse.next({ request });
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          response = NextResponse.next({
-            request,
-          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          );
+          response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
-          )
+          );
         },
       },
     }
   );
 
-  // Check if this is an admin route
-  if (request.nextUrl.pathname.startsWith('/Admin')) {
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      
-      if (error || !user) {
-        // Redirect to login with return URL
-        const loginUrl = new URL('/login', request.url);
-        loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
-        loginUrl.searchParams.set('error', 'unauthorized');
-        return NextResponse.redirect(loginUrl);
-      }
+  const needsAdminAuth = pathname.startsWith("/Admin/");
+  const needsUserAuth = isUserProtectedRoute(pathname);
+  const isPublic = isPublicRoute(pathname);
 
-      // Check if user has admin role
+  if (!isPublic && (needsAdminAuth || needsUserAuth)) {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return withRedirectToLogin(request);
+    }
+
+    if (needsAdminAuth) {
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('uid', user.id)
+        .from("profiles")
+        .select("role")
+        .eq("uid", user.id)
         .single();
 
-      if (profileError || !profile || profile.role !== 'admin') {
-        // Redirect non-admin users to dashboard
-        const dashboardUrl = new URL('/dashboard', request.url);
-        dashboardUrl.searchParams.set('error', 'access_denied');
-        return NextResponse.redirect(dashboardUrl);
+      if (profileError || profile?.role !== "admin") {
+        return withRedirectToLogin(request);
       }
-    } catch (error) {
-      console.error('Admin middleware error:', error);
-      // Redirect to login on any error
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('error', 'auth_error');
-      return NextResponse.redirect(loginUrl);
     }
   }
 
-  // Set CSP headers (relaxed to support Next.js/webpack runtime and external services)
   response.headers.set(
-    'Content-Security-Policy',
+    "Content-Security-Policy",
     [
       "default-src 'self';",
       "base-uri 'self';",
       "form-action 'self';",
       "frame-ancestors 'self';",
       "object-src 'none';",
-      // Allow webpack/Next runtime, workers and dev websockets + external scripts
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://connect.facebook.net;",
       "script-src-elem 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net;",
       "style-src 'self' 'unsafe-inline';",
@@ -82,7 +108,7 @@ export async function middleware(request: NextRequest) {
       "connect-src 'self' https: wss: ws:;",
       "worker-src 'self' blob:;",
       "frame-src 'self' https://www.google.com https://www.facebook.com;",
-    ].join(' ')
+    ].join(" ")
   );
 
   return response;
@@ -90,7 +116,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Exclude Next static assets and common binary assets from middleware to avoid breaking chunk loading
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map)$).*)",
   ],
 };

@@ -50,6 +50,8 @@ interface DashboardStats {
   totalRevenue: number;
   totalProducts: number;
   totalCustomers: number;
+  revenueGrowth: number;
+  orderGrowth: number;
   recentOrders: Order[];
   monthlyRevenue: MonthlyData[];
   orderTrends: MonthlyData[];
@@ -64,6 +66,8 @@ const Dashboard = () => {
     totalRevenue: 0,
     totalProducts: 0,
     totalCustomers: 0,
+    revenueGrowth: 0,
+    orderGrowth: 0,
     recentOrders: [],
     monthlyRevenue: [],
     orderTrends: [],
@@ -108,8 +112,7 @@ const Dashboard = () => {
       icon: DollarSign,
       color: "text-green-500",
       bgColor: "bg-green-100 dark:bg-green-900/20",
-      change: "+12.5%",
-      changeType: "increase"
+      change: stats.revenueGrowth,
     },
     {
       title: "Total Orders",
@@ -117,8 +120,7 @@ const Dashboard = () => {
       icon: ShoppingCart,
       color: "text-blue-500",
       bgColor: "bg-blue-100 dark:bg-blue-900/20",
-      change: "+8.2%",
-      changeType: "increase"
+      change: stats.orderGrowth,
     },
     {
       title: "Total Products",
@@ -126,8 +128,7 @@ const Dashboard = () => {
       icon: Package,
       color: "text-purple-500",
       bgColor: "bg-purple-100 dark:bg-purple-900/20",
-      change: "+3.1%",
-      changeType: "increase"
+      change: 0,
     },
     {
       title: "Total Customers",
@@ -135,8 +136,7 @@ const Dashboard = () => {
       icon: Users,
       color: "text-orange-500",
       bgColor: "bg-orange-100 dark:bg-orange-900/20",
-      change: "+15.3%",
-      changeType: "increase"
+      change: 0,
     }
   ];
 
@@ -307,16 +307,17 @@ const Dashboard = () => {
                     {stat.value}
                   </p>
                   <div className="flex items-center mt-2">
-                    {stat.changeType === "increase" ? (
+                    {stat.change >= 0 ? (
                       <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
                     ) : (
                       <ArrowDownRight className="w-4 h-4 text-red-500 mr-1" />
                     )}
                     <span className={clsx("text-sm font-medium", {
-                      "text-green-600": stat.changeType === "increase",
-                      "text-red-600": stat.changeType === "decrease"
+                      "text-green-600": stat.change >= 0,
+                      "text-red-600": stat.change < 0
                     })}>
-                      {stat.change}
+                      {stat.change >= 0 ? "+" : ""}
+                      {stat.change.toFixed(1)}%
                     </span>
                   </div>
                 </div>
