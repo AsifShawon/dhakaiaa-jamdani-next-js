@@ -1,12 +1,20 @@
-"use client";
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DualRangeSlider from "./DualRangeSlider";
+import { fetchCategories } from "@/app/utils/productUtils";
 
 const LeftBarComp = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const category = ["Sharee", "Panjabi", "Threepcs"];
+  const [categories, setCategories] = useState<string[]>(["Sharee", "Panjabi", "Threepcs"]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const fetched = await fetchCategories();
+      setCategories(fetched);
+    };
+    loadCategories();
+  }, []);
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -43,7 +51,7 @@ const LeftBarComp = () => {
           Category
         </div>
         <div className="collapse-content">
-          {category.map((item, index) => (
+          {categories.map((item, index) => (
             <div
               className="flex justify-start items-center cursor-pointer"
               key={index}

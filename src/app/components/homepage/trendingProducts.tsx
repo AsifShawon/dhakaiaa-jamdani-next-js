@@ -9,12 +9,16 @@ import { motion } from "framer-motion";
 const TrendingProducts = () => {
   const dispatch = useDispatch();
   const { products, status, error } = useSelector((state: any) => state.products);
+  const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
+    setMounted(true);
     if (status === 'idle') {
       dispatch(fetchProducts() as any); 
     }
   }, [status, dispatch]);
+
+  const currentStatus = mounted ? status : 'idle';
 
   // Show only first 6 products for trending section
   const trendingProducts = products.slice(0, 6);
@@ -49,13 +53,13 @@ const TrendingProducts = () => {
           />
         </motion.div>
 
-        {status === 'loading' ? (
+        {currentStatus === 'loading' ? (
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-gray-200 dark:bg-gray-700 rounded-2xl h-96 animate-pulse"></div>
             ))}
           </div>
-        ) : status === 'failed' ? (
+        ) : currentStatus === 'failed' ? (
           <div className="text-center py-12">
             <div className="text-red-500 text-lg font-medium">Error loading products: {error}</div>
           </div>

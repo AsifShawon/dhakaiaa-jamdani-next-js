@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, X, Star, ChevronDown, ChevronUp } from "lucide-react";
 import DualRangeSlider from "./DualRangeSlider";
+import { fetchCategories } from "@/app/utils/productUtils";
 
 const AdvancedFilters = () => {
   const router = useRouter();
@@ -16,7 +17,16 @@ const AdvancedFilters = () => {
     availability: true,
   });
 
-  const categories = ["Sharee", "Panjabi", "Threepcs"];
+  const [categories, setCategories] = useState<string[]>(["Sharee", "Panjabi", "Threepcs"]);
+  
+  useEffect(() => {
+    const loadCategories = async () => {
+      const fetched = await fetchCategories();
+      setCategories(fetched);
+    };
+    loadCategories();
+  }, []);
+
   const ratings = [5, 4, 3, 2, 1];
 
   // Modified createQueryString

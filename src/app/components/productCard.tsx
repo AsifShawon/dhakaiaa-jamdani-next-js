@@ -98,7 +98,7 @@ const ProductCard = ({ props }: { props: any }) => {
             initial={{ y: 20, opacity: 0 }}
             whileHover={{ y: 0, opacity: 1 }}
             onClick={handleAddToCart}
-            disabled={isAddingToCart}
+            disabled={isAddingToCart || product.availability === 'out-of-stock'}
             className="absolute bottom-4 left-4 right-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white py-2 px-4 rounded-lg font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 hover:bg-red-500 hover:text-white disabled:opacity-50"
           >
             <div className="flex items-center justify-center gap-2">

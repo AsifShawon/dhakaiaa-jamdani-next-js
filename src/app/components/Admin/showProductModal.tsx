@@ -2,6 +2,7 @@
 import { deleteProduct } from "@/app/Admin/AddProduct/action";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
+import { fetchCategories } from "@/app/utils/productUtils";
 
 interface Product {
   id: number;
@@ -46,6 +47,15 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const fetched = await fetchCategories();
+      setCategories(fetched);
+    };
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     if (product) {
@@ -201,14 +211,29 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
               <div>
                 <label className="label">Category</label>
-                <input
-                  type="text"
-                  name="category"
-                  className="input input-bordered w-full"
-                  value={formData.category}
-                  onChange={handleChange}
-                  readOnly={!isEditing}
-                />
+                {isEditing ? (
+                  <select
+                    name="category"
+                    className="select select-bordered w-full"
+                    value={formData.category}
+                    onChange={handleChange}
+                  >
+                    {categories.map((cat, index) => (
+                      <option key={index} value={cat}>{cat}</option>
+                    ))}
+                    {!categories.includes(formData.category) && formData.category && (
+                       <option value={formData.category}>{formData.category}</option>
+                    )}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    name="category"
+                    className="input input-bordered w-full"
+                    value={formData.category}
+                    readOnly
+                  />
+                )}
               </div>
             </div>
 

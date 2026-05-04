@@ -4,6 +4,7 @@ import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import clsx from "clsx";
 import { addProduct } from "./action";
+import { fetchCategories } from "@/app/utils/productUtils";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 
@@ -25,12 +26,20 @@ const Page = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [lastCreatedProductId, setLastCreatedProductId] = useState<number | null>(null);
+  const [categories, setCategories] = useState<string[]>(["Sharee", "Panjabi", "Threepcs"]);
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     setIsClient(true);
+    const loadCategories = async () => {
+      const fetched = await fetchCategories();
+      setCategories(fetched as string[]);
+    };
+    loadCategories();
   }, []);
 
-  const categories = ["Sharee", "Panjabi", "Threepcs"];
+  // const categories = ["Sharee", "Panjabi", "Threepcs"]; // Moved to state
 
   const cardClasses = clsx(
     "rounded-xl p-6 shadow-lg border transition-all duration-300 hover:shadow-xl",
@@ -149,6 +158,12 @@ const Page = () => {
 
       const createdProduct = await addProduct(formData);
       setLastCreatedProductId(createdProduct?.id ?? null);
+      
+      // Update categories list if new one was added
+      if (isAddingNewCategory && !categories.includes(category)) {
+        setCategories(prev => [...prev, category]);
+      }
+
       setUploadProgress(100);
       showToast("Product added successfully!", "success");
       setTitle("");
@@ -158,6 +173,8 @@ const Page = () => {
       setPrice(0);
       setDiscount(0);
       setAvailability("in-stock"); // Reset to default
+      setIsAddingNewCategory(false);
+      setNewCategoryName("");
       setLoading(false);
     } catch (error) {
       console.error("Error adding product:", error);
@@ -227,25 +244,82 @@ const Page = () => {
                       <button
                         key={cat}
                         type="button"
-                        onClick={() => setCategory(cat)}
+                        onClick={() => {
+                          setCategory(cat);
+                          setIsAddingNewCategory(false);
+                        }}
                         className={clsx(
                           "px-3 py-2 rounded-lg border text-sm",
-                          category === cat ? "bg-blue-500 text-white border-blue-500" : "border-gray-400"
+                          category === cat && !isAddingNewCategory ? "bg-blue-500 text-white border-blue-500" : "border-gray-400"
                         )}
                       >
                         {cat}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingNewCategory(true)}
+                      className={clsx(
+                        "px-3 py-2 rounded-lg border text-sm",
+                        isAddingNewCategory ? "bg-green-500 text-white border-green-500" : "border-dashed border-gray-400 text-gray-500"
+                      )}
+                    >
+                      + Add New
+                    </button>
                   </div>
-                  <select className={selectClasses} onChange={(e) => setCategory(e.target.value)} value={category} disabled={!isClient}>
-                    {categories.map((cat, index) => (
-                      <option key={index} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  
+                  {isAddingNewCategory ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="New category name"
+                        value={newCategoryName}
+                        onChange={(e) => {
+                          setNewCategoryName(e.target.value);
+                          setCategory(e.target.value);
+                        }}
+                        className={inputClasses}
+                        disabled={!isClient}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newCategoryName.trim()) {
+                            setCategory(newCategoryName.trim());
+                          } else {
+                            setIsAddingNewCategory(false);
+                            setCategory(categories[0]);
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                      >
+                        OK
+                      </button>
+                    </div>
+                  ) : (
+                    <select 
+                      className={selectClasses} 
+                      onChange={(e) => {
+                        if (e.target.value === "ADD_NEW") {
+                          setIsAddingNewCategory(true);
+                        } else {
+                          setCategory(e.target.value);
+                        }
+                      }} 
+                      value={category} 
+                      disabled={!isClient}
+                    >
+                      {categories.map((cat, index) => (
+                        <option key={index} value={cat}>{cat}</option>
+                      ))}
+                      <option value="ADD_NEW">+ Add New Category</option>
+                    </select>
+                  )}
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Price (৳)</label>
+                  <label className={labelClasses}>Price (Tk.)</label>
                   <input
                     type="number"
                     placeholder="0"
@@ -274,9 +348,9 @@ const Page = () => {
                 })}>
                   <p className={labelClasses}>Price Preview</p>
                   <div className="text-sm space-y-1">
-                    <p>Original: ৳{price.toFixed(2)}</p>
+                    <p>Original: Tk.{price.toFixed(2)}</p>
                     <p>Discount: {discount}%</p>
-                    <p className="font-bold text-green-500">Final: ৳{finalPrice.toFixed(2)}</p>
+                    <p className="font-bold text-green-500">Final: Tk.{finalPrice.toFixed(2)}</p>
                   </div>
                 </div>
 
@@ -300,7 +374,7 @@ const Page = () => {
                   disabled={aiLoading || !isClient}
                   className="px-5 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-lg hover:scale-105 transition-all disabled:opacity-50"
                 >
-                  {aiLoading ? "Generating..." : "✨ Generate Descriptions with AI"}
+                  {aiLoading ? "Generating..." : "Generate Descriptions with AI"}
                 </button>
 
                 {/* Description Editor with Tabs */}
@@ -377,10 +451,10 @@ const Page = () => {
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Images */}
           <div className="lg:col-span-1">
@@ -430,7 +504,7 @@ const Page = () => {
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
                         disabled={!isClient}
                       >
-                        ×
+                        x
                       </button>
                       <span className="absolute bottom-1 left-1 text-[10px] bg-black/60 text-white px-1 rounded">
                         Drag

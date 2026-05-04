@@ -103,6 +103,17 @@ const Page = () => {
   const placeOrder = async () => {
     if (!authUser?.id) return setSubmissionError("Please login to place order.");
     if (cartProducts.length === 0) return setSubmissionError("Cart is empty.");
+    
+    // Check for out of stock items
+    const outOfStockItems = cartProducts.filter((p: any) => p.availability !== "in-stock");
+    if (outOfStockItems.length > 0) {
+      return setSubmissionError(
+        `The following items are out of stock and cannot be ordered: ${outOfStockItems
+          .map((item: any) => item.title)
+          .join(", ")}`
+      );
+    }
+
     setSubmissionError("");
     setIsSubmitting(true);
     try {
